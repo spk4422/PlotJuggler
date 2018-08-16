@@ -101,8 +101,8 @@ if(COMPILING_WITH_CATKIN)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION})
     
-    install(DIRECTORY site/       DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/docs )
-    install(DIRECTORY docs/images DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/docs )
+    install(DIRECTORY ../site/       DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/docs )
+    install(DIRECTORY ../docs/images DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/docs )
     add_definitions( -DPJ_DOCUMENTATION_DIR="${CMAKE_INSTALL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/docs" )
 else()
     set(CMAKE_INSTALL_PREFIX "/usr/local")
@@ -110,8 +110,8 @@ else()
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-    install(DIRECTORY site/       DESTINATION ${CMAKE_BINARY_DIR}/share/docs )
-    install(DIRECTORY docs/images DESTINATION ${CMAKE_BINARY_DIR}/share/docs )
+    install(DIRECTORY ../site/       DESTINATION ${CMAKE_BINARY_DIR}/share/docs )
+    install(DIRECTORY ../docs/images DESTINATION ${CMAKE_BINARY_DIR}/share/docs )
     add_definitions( -DPJ_DOCUMENTATION_DIR="${CMAKE_INSTALL_PREFIX}/share/docs" )
 endif()
 
@@ -140,60 +140,6 @@ if(COMPILING_WITH_CATKIN)
     add_subdirectory( plugins/ROS )
 endif()
 
-
-#########################  create a package ####################################
-
-
-
-SET(CPACK_PACKAGE_CONTACT "davide.faconti@gmail.com")
-
-SET(CPACK_PACKAGE_NAME "plotjuggler${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "PlotJuggler: juggle with data")
-SET(CPACK_PACKAGE_VERSION_MAJOR ${PLOTJUGGLER_VERSION_MAJOR} )
-SET(CPACK_PACKAGE_VERSION_MINOR ${PLOTJUGGLER_VERSION_MINOR} )
-SET(CPACK_PACKAGE_VERSION_PATCH ${PLOTJUGGLER_VERSION_PATCH} )
-SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-
-SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
-SET(CPACK_PACKAGE_VENDOR "Icarus Technology")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "PlotJuggler")
-
-INCLUDE(CPack)
-
-IF (NOT WIN32)
-    SET(CPACK_GENERATOR "TGZ;DEB")
-    SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Davide Faconti")
-    SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/")
-    SET(CPACK_DEBIAN_PACKAGE_DEPENDS "qt5-default, libqt5svg5-dev")
-
-else()
-    include(CPackIFW)
-    get_target_property(QtCore_LOCATION Qt5::Core LOCATION)
-    get_filename_component(QT_DLL_DIR ${QtCore_LOCATION} PATH)
-    install(FILES
-      ${QT_DLL_DIR}/Qt5Core.dll
-      ${QT_DLL_DIR}/Qt5Gui.dll
-      ${QT_DLL_DIR}/Qt5Widgets.dll
-      ${QT_DLL_DIR}/Qt5Xml.dll
-      ${QT_DLL_DIR}/Qt5Svg.dll
-      ${QT_DLL_DIR}/libgcc_s_dw2-1.dll
-      ${QT_DLL_DIR}/libwinpthread-1.dll
-      ${QT_DLL_DIR}/libstdc++-6.dll
-      DESTINATION ./bin
-    )
-    install(FILES
-      ${QT_DLL_DIR}/../plugins/platforms/qwindows.dll
-      DESTINATION plugins/platforms
-    )
-
-    CPACK_ADD_COMPONENT(PlotJuggler
-        DISPLAY_NAME "PlotJuggler"
-        DESCRIPTION  "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}" )
-
-    CPACK_IFW_CONFIGURE_COMPONENT(PlotJuggler
-        VERSION "${CPACK_PACKAGE_VERSION}"
-        LICENSES "LGPL" "${CMAKE_SOURCE_DIR}/LICENSE")
-endif()
 
 
 
