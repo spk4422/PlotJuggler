@@ -3,6 +3,7 @@
 #include <QSplashScreen>
 #include <QThread>
 #include <QCommandLineParser>
+#include <QDesktopWidget>
 
 QString getFunnySubtitle(){
 
@@ -10,15 +11,15 @@ QString getFunnySubtitle(){
     int n = qrand() % 15;
     switch(n)
     {
-    case 0: return "Now with less bugs than usual...";
+    case 0: return "Now with less bugs than usual!";
     case 1: return "Talk is cheap, show me the data!";
     case 2: return "The visualization tool that you deserve";
     case 3: return "Timeseries, timeseries everywhere!";
     case 4: return "Changing the world, one plot at a time";
     case 5: return "\"Harry Plotter\" was also an option";
     case 6: return "Add data and mix vigorously";
-    case 7: return "Just Plot It!";
-    case 8: return "I didn't find a better name...";
+    case 7: return "Data is in the eye of the beholder";
+    case 8: return "I haven't find a better name...";
     case 9: return "\"It won't take long to code that\".. Davide, 2014";
     case 10: return "Visualize data responsibly";
     }
@@ -39,9 +40,10 @@ int main(int argc, char *argv[])
                                 "   background: white;\n"
                                 "   color: black; }" ));
 
-    QString VERSION_STRING = QString::number(PJ_MAJOR_VERSION) + QString(".") +
-            QString::number(PJ_MINOR_VERSION) + QString(".") +
-            QString::number(PJ_PATCH_VERSION);
+    const QString VERSION_STRING = QString("%1.%2.%3").
+            arg(PJ_MAJOR_VERSION).
+            arg(PJ_MINOR_VERSION).
+            arg(PJ_PATCH_VERSION);
 
     app.setApplicationVersion(VERSION_STRING);
 
@@ -107,6 +109,12 @@ int main(int argc, char *argv[])
         painter.end();
 
         QSplashScreen splash(main_pixmap);
+
+        QDesktopWidget* desktop = QApplication::desktop();
+        const int scrn = desktop->screenNumber(QCursor::pos());
+        const QPoint currentDesktopsCenter = desktop->availableGeometry(scrn).center();
+        splash.move(currentDesktopsCenter - splash.rect().center());
+
         splash.show();
 
         MainWindow w( parser );
