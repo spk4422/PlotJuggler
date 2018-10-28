@@ -135,7 +135,7 @@ private:
 
     Ui::MainWindow *ui;
 
-    TabbedPlotWidget *      _main_tabbed_widget;
+    TabbedPlotWidget *_main_tabbed_widget;
 
     QShortcut _undo_shortcut;
     QShortcut _redo_shortcut;

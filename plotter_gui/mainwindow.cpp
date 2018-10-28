@@ -775,30 +775,6 @@ bool MainWindow::xmlLoadState(QDomDocument state_document)
         }
     }
 
-    auto custom_equations = root.firstChildElement( "customMathEquations" );
-
-    try{
-        if( !custom_equations.isNull() )
-        {
-            for (QDomElement custom_eq = custom_equations.firstChildElement( "snippet" )  ;
-                 custom_eq.isNull() == false;
-                 custom_eq = custom_eq.nextSiblingElement( "snippet" ) )
-            {
-                CustomPlotPtr new_custom_plot = CustomPlot::createFromXML(custom_eq);
-                const auto& name = new_custom_plot->name();
-                _custom_plots[name] = new_custom_plot;
-                new_custom_plot->calculate( _mapped_plot_data );
-                _curvelist_widget->addItem( QString::fromStdString( name ) );
-            }
-        }
-    }
-    catch( std::runtime_error& err)
-    {
-        QMessageBox::warning(this, tr("Exception"),
-                             tr("Failed to refresh a customMathEquation \n\n %1\n")
-                             .arg(err.what()) );
-    }
-
     //-----------------------------------------------------
     checkAllCurvesFromLayout(root);
     //-----------------------------------------------------
@@ -901,6 +877,14 @@ void MainWindow::onActionSaveLayout()
             loaded_streamer.setAttribute("name", streamer_name );
             root.appendChild( loaded_streamer );
         }
+
+        QDomElement custom_equations =  doc.createElement("customMathEquations");
+        for (const auto& it: _custom_plots)
+        {
+            const CustomPlotPtr& custom_plot = it.second;
+            custom_equations.appendChild( custom_plot->xmlSaveState(doc) );
+        }
+        root.appendChild(custom_equations);
     }
 
     QFile file(fileName);
@@ -1556,30 +1540,54 @@ void MainWindow::onActionLoadLayoutFromFile(QString filename, bool load_data)
                 onActionLoadDataFileImpl( filename, true );
             }
         }
-    }
 
-    QDomElement previously_loaded_streamer =  root.firstChildElement( "previouslyLoadedStreamer" );
-    if( previously_loaded_streamer.isNull() == false)
-    {
-        QString streamer_name = previously_loaded_streamer.attribute("name");
-
-        QMessageBox msgBox;
-        msgBox.setWindowTitle("Start Streaming?");
-        msgBox.setText(tr("Do you want to start the previously used streaming plugin?\n\n %1 \n\n").arg(streamer_name));
-        msgBox.addButton(tr("No (Layout only)"), QMessageBox::RejectRole);
-        QPushButton* buttonBoth = msgBox.addButton(tr("Yes (Both Layout and Streaming)"), QMessageBox::YesRole);
-        msgBox.setDefaultButton(buttonBoth);
-        msgBox.exec();
-        if( msgBox.clickedButton() == buttonBoth )
+        QDomElement previously_loaded_streamer =  root.firstChildElement( "previouslyLoadedStreamer" );
+        if( previously_loaded_streamer.isNull() == false)
         {
-            if( _data_streamer.count(streamer_name) != 0 )
+            QString streamer_name = previously_loaded_streamer.attribute("name");
+
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Start Streaming?");
+            msgBox.setText(tr("Do you want to start the previously used streaming plugin?\n\n %1 \n\n").arg(streamer_name));
+            msgBox.addButton(tr("No (Layout only)"), QMessageBox::RejectRole);
+            QPushButton* buttonBoth = msgBox.addButton(tr("Yes (Both Layout and Streaming)"), QMessageBox::YesRole);
+            msgBox.setDefaultButton(buttonBoth);
+            msgBox.exec();
+            if( msgBox.clickedButton() == buttonBoth )
             {
-                onActionLoadStreamer( streamer_name );
+                if( _data_streamer.count(streamer_name) != 0 )
+                {
+                    onActionLoadStreamer( streamer_name );
+                }
+                else{
+                    QMessageBox::warning(this, tr("Error Loading Streamer"),
+                                         tr("The streamer named %1 can not be loaded.").arg(streamer_name));
+                }
             }
-            else{
-                QMessageBox::warning(this, tr("Error Loading Streamer"),
-                                     tr("The streamer named %1 can not be loaded.").arg(streamer_name));
+        }
+
+        auto custom_equations = root.firstChildElement( "customMathEquations" );
+
+        try{
+            if( !custom_equations.isNull() )
+            {
+                for (QDomElement custom_eq = custom_equations.firstChildElement( "snippet" )  ;
+                     custom_eq.isNull() == false;
+                     custom_eq = custom_eq.nextSiblingElement( "snippet" ) )
+                {
+                    CustomPlotPtr new_custom_plot = CustomPlot::createFromXML(custom_eq);
+                    const auto& name = new_custom_plot->name();
+                    _custom_plots[name] = new_custom_plot;
+                    new_custom_plot->calculate( _mapped_plot_data );
+                    _curvelist_widget->addItem( QString::fromStdString( name ) );
+                }
             }
+        }
+        catch( std::runtime_error& err)
+        {
+            QMessageBox::warning(this, tr("Exception"),
+                                 tr("Failed to refresh a customMathEquation \n\n %1\n")
+                                 .arg(err.what()) );
         }
     }
 
