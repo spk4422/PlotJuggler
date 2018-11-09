@@ -26,6 +26,43 @@
 
 const double MAX_DOUBLE = std::numeric_limits<double>::max() / 2 ;
 
+class Canvas: public QwtPlotCanvas
+{
+public:
+  Canvas( PlotWidget* parent = NULL ) :
+    QwtPlotCanvas(parent),
+    _parent(parent)
+  {
+    this->setAcceptDrops( true );
+  }
+
+  virtual void dragEnterEvent(QDragEnterEvent *event) override
+  {
+    _parent->dragEnterEvent2(event);
+  }
+  virtual void dropEvent(QDropEvent *event) override
+  {
+    _parent->dropEvent2(event);
+  }
+  virtual void dragLeaveEvent(QDragLeaveEvent *event) override
+  {
+    _parent->dragLeaveEvent2(event);
+  }
+
+  void changeBackgroundColor(QColor color)
+  {
+      if( plot()->canvasBackground().color() != color)
+      {
+          plot()->setCanvasBackground( color );
+          plot()->replot();
+      }
+  }
+private:
+  PlotWidget* _parent;
+
+};
+
+
 void PlotWidget::setDefaultRangeX()
 {
     if( _mapped_data.numeric.size() > 0)
@@ -69,6 +106,11 @@ PlotWidget::PlotWidget(PlotDataMapRef &datamap, QWidget *parent):
     _axisX(nullptr),
     _time_offset(0.0)
 {
+    auto *canvas = new Canvas(this);
+     //auto *canvas = new QwtPlotCanvas(this);
+
+    this->setCanvas( canvas );
+
     this->setAcceptDrops( true );
 
     this->setMinimumWidth( 100 );
@@ -77,13 +119,10 @@ PlotWidget::PlotWidget(PlotDataMapRef &datamap, QWidget *parent):
     this->sizePolicy().setHorizontalPolicy( QSizePolicy::Expanding);
     this->sizePolicy().setVerticalPolicy( QSizePolicy::Expanding);
 
-    QwtPlotCanvas *canvas = new QwtPlotCanvas(this);
-
     canvas->setFrameStyle( QFrame::NoFrame );
     canvas->setPaintAttribute( QwtPlotCanvas::BackingStore, true );
 
-    this->setCanvas( canvas );
-    this->setCanvasBackground( QColor( 250, 250, 250 ) );
+    this->setCanvasBackground( Qt::white );
     this->setAxisAutoScale(0, true);
 
     this->axisScaleEngine(QwtPlot::xBottom)->setAttribute(QwtScaleEngine::Floating,true);
@@ -123,8 +162,8 @@ PlotWidget::PlotWidget(PlotDataMapRef &datamap, QWidget *parent):
     buildActions();
     buildLegend();
 
-    this->canvas()->setMouseTracking(true);
-    this->canvas()->installEventFilter(this);
+    canvas->setMouseTracking(true);
+    canvas->installEventFilter(this);
 
     setDefaultRangeX();
 
@@ -405,7 +444,7 @@ const std::map<std::string, std::shared_ptr<QwtPlotCurve> > &PlotWidget::curveLi
     return _curve_list;
 }
 
-void PlotWidget::dragEnterEvent(QDragEnterEvent *event)
+void PlotWidget::dragEnterEvent2(QDragEnterEvent *event)
 {
     changeBackgroundColor( QColor( 230, 230, 230 ) );
 
@@ -433,14 +472,21 @@ void PlotWidget::dragEnterEvent(QDragEnterEvent *event)
 }
 
 
-void PlotWidget::dragLeaveEvent(QDragLeaveEvent*)
+void PlotWidget::dragLeaveEvent2(QDragLeaveEvent* event)
 {
-    changeBackgroundColor( QColor( 250, 250, 250 ) );
+  QPoint local_pos =  canvas()->mapFromGlobal(QCursor::pos()) ;
+  if( canvas()->rect().contains( local_pos ) )
+  {
+      changeBackgroundColor( QColor( 250, 150, 150 ) );
+  }
+  else{
+    changeBackgroundColor( Qt::white );
+  }
 }
 
-void PlotWidget::dropEvent(QDropEvent *event)
+void PlotWidget::dropEvent2(QDropEvent *event)
 {
-    setCanvasBackground( QColor( 250, 250, 250 ) );
+    setCanvasBackground( Qt::white );
 
     const QMimeData *mimeData = event->mimeData();
     QStringList mimeFormats = mimeData->formats();
@@ -1347,12 +1393,12 @@ bool PlotWidget::eventFilter(QObject *obj, QEvent *event)
 
     case QEvent::Leave:
     {
-        changeBackgroundColor( QColor( 250, 250, 250 ) );
+        changeBackgroundColor( Qt::white );
     }break;
         //---------------------------------
     case QEvent::MouseButtonRelease :
     {
-        changeBackgroundColor( QColor( 250, 250, 250 ) );
+        changeBackgroundColor( Qt::white );
         QApplication::restoreOverrideCursor();
     }break;
         //---------------------------------

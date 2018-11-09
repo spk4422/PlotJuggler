@@ -15,6 +15,7 @@
 #include <QCompleter>
 #include <QStandardItem>
 #include <QItemSelectionModel>
+#include <QPointer>
 
 class CustomSortedTableItem: public QStandardItem
 {
@@ -195,7 +196,7 @@ bool FilterableListWidget::eventFilter(QObject *object, QEvent *event)
             !_dragging)
         {
             _dragging = true;
-            QDrag *drag = new QDrag(this);
+            QPointer<QDrag> drag( new QDrag(this) );
             QMimeData *mimeData = new QMimeData;
 
             QByteArray mdata;
@@ -237,6 +238,7 @@ bool FilterableListWidget::eventFilter(QObject *object, QEvent *event)
 
             drag->setMimeData(mimeData);
             drag->exec(Qt::CopyAction | Qt::MoveAction);
+            qDebug() << "dragged!";
         }
         return true;
     }

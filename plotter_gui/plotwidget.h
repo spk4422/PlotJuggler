@@ -55,10 +55,10 @@ public:
     void changeBackgroundColor(QColor color);
 
 protected:
-    virtual void dragEnterEvent(QDragEnterEvent *event) override;
-    virtual void dropEvent(QDropEvent *event) override;
-    virtual bool eventFilter(QObject *obj, QEvent *event) override;
-    virtual void dragLeaveEvent(QDragLeaveEvent *event) override;
+    virtual void dragEnterEvent2(QDragEnterEvent *event) ;
+    virtual void dropEvent2(QDropEvent *event) ;
+    virtual void dragLeaveEvent2(QDragLeaveEvent *event) ;
+    virtual bool eventFilter(QObject *obj, QEvent *event) override ;
 
 signals:
     void swapWidgetsRequested(PlotWidget* source, PlotWidget* destination);
@@ -120,7 +120,7 @@ private slots:
     void on_externallyResized(const QRectF &new_rect);
 
 
-private:
+protected:
     std::map<std::string, std::shared_ptr<QwtPlotCurve> > _curve_list;
     std::map<std::string, QwtPlotMarker*> _point_marker;
 
@@ -166,6 +166,8 @@ private:
     PlotData::RangeValue _custom_Y_limits;
 
     AxisLimitsDialog* _axis_limits_dialog;
+
+    friend class Canvas;
 
 };
 
