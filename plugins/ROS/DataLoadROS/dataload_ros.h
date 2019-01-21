@@ -6,6 +6,10 @@
 
 #include <ros/ros.h>
 #include <rosbag/bag.h>
+#include <deque>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
 
 #include "PlotJuggler/dataloader_base.h"
 #include <ros_type_introspection/ros_introspection.hpp>
@@ -50,6 +54,25 @@ private:
     void storeMessageInstancesAsUserDefined(PlotDataMapRef& plot_map,
                                             const std::string &prefix,
                                             bool use_header_stamp);
+
+    std::unordered_set<std::string> _warning_headerstamp;
+    std::unordered_set<std::string> _warning_monotonic;
+    std::unordered_set<std::string> _warning_cancellation;
+    std::unordered_set<std::string> _warning_max_arraysize;
+
+    struct PackagedMessage
+    {
+        std::string topic_name;
+        std::vector<uint8_t> buffer;
+        double msg_time;
+    };
+    std::deque<PackagedMessage> _task_queue;
+    std::mutex _mutex_queue;
+    std::condition_variable _signal_empty_queue;
+    std::thread _worker_thread;
+
+    void workerLoop(PlotDataMapRef& plot_data, const std::string& prefix,
+                    int max_array_size, bool use_header_stamp);
 };
 
 #endif // DATALOAD_CSV_H

@@ -197,10 +197,10 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
 
     PlotDataMapRef plot_map;
 
-    std::unordered_set<std::string> warning_headerstamp;
-    std::unordered_set<std::string> warning_monotonic;
-    std::unordered_set<std::string> warning_cancellation;
-    std::unordered_set<std::string> warning_max_arraysize;
+    _warning_headerstamp.clear();
+    _warning_monotonic.clear();
+    _warning_cancellation.clear();
+    _warning_max_arraysize.clear();
     int msg_count = 0;
 
     QElapsedTimer timer;
@@ -211,8 +211,7 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
         const std::string& topic_name  = msg_instance.getTopic();
         const size_t msg_size  = msg_instance.size();
 
-        std::shared_ptr<std::vector<uint8_t>> buffer = std::make_shared<std::vector<uint8_t>>();
-        buffer->resize(msg_size);
+        std::shared_ptr<std::vector<uint8_t>> buffer( new std::vector<uint8_t>(msg_size) );
 
         if( msg_count++ %100 == 0)
         {
@@ -231,10 +230,8 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
         double msg_time = msg_instance.getTime().toSec();
 
         std::function<void()> packagedTask =
-                [buffer, this, topic_name, max_array_size,
-                msg_time, use_header_stamp, &prefix, &plot_map,
-                &warning_max_arraysize, &warning_headerstamp,
-                &warning_cancellation, &warning_monotonic]()
+                [this, buffer, topic_name, msg_time,
+                max_array_size, use_header_stamp, &prefix, &plot_map]()
         {
             double message_time = msg_time;
             FlatMessage flat_container;
@@ -246,7 +243,7 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
                                                                       max_array_size );
             if( !max_size_ok )
             {
-                warning_max_arraysize.insert(topic_name);
+                _warning_max_arraysize.insert(topic_name);
             }
             _parser->applyNameTransform( topic_name, flat_container, &renamed_values );
 
@@ -260,7 +257,7 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
                         message_time = time;
                     }
                     else{
-                        warning_headerstamp.insert(topic_name);
+                        _warning_headerstamp.insert(topic_name);
                     }
                 }
             }
@@ -291,7 +288,7 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
                     const double last_time = plot_data.back().x;
                     if( message_time < last_time)
                     {
-                        warning_monotonic.insert(*key_ptr);
+                        _warning_monotonic.insert(*key_ptr);
                     }
                 }
 
@@ -302,7 +299,7 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
                     bool error = (val_i != static_cast<uint64_t>(val_d));
                     if(error)
                     {
-                        warning_cancellation.insert(*key_ptr);
+                        _warning_cancellation.insert(*key_ptr);
                     }
                     plot_data.pushBack( PlotData::Point(message_time, val_d) );
                 }
@@ -313,7 +310,7 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
                     bool error = (val_i != static_cast<int64_t>(val_d));
                     if(error)
                     {
-                        warning_cancellation.insert(*key_ptr);
+                       _warning_cancellation.insert(*key_ptr);
                     }
                     plot_data.pushBack( PlotData::Point(message_time, val_d) );
                 }
@@ -330,14 +327,14 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
 
     qDebug() << "The loading operation took" << timer.elapsed() << "milliseconds";
 
-    if( !warning_max_arraysize.empty() )
+    if( !_warning_max_arraysize.empty() )
     {
         QString message = QString("The following topics contain arrays with more than %1 elements.\n"
                                   "They were trunkated to the maximum array size %1\n").arg(max_array_size);
-        DialogWithItemList::warning( message, warning_max_arraysize );
+        DialogWithItemList::warning( message, _warning_max_arraysize );
     }
 
-    if( !warning_monotonic.empty() )
+    if( !_warning_monotonic.empty() )
     {
         QString message = "The time of one or more fields is not strictly monotonic.\n"
                           "Some plots will not be displayed correctly\n";
@@ -347,24 +344,24 @@ PlotDataMapRef DataLoadROS::readDataFromFile(const QString &file_name, bool use_
             message += "\nNOTE: you should probably DISABLE this checkbox:\n\n"
                        "[If present, use the timestamp in the field header.stamp]\n";
         }
-        DialogWithItemList::warning( message, warning_monotonic );
+        DialogWithItemList::warning( message, _warning_monotonic );
     }
 
-    if( !warning_headerstamp.empty() )
+    if( !_warning_headerstamp.empty() )
     {
         QString message = "You checked the option:\n\n"
                           "[If present, use the timestamp in the field header.stamp]\n\n"
                           "But the [header.stamp] of one or more messages were NOT initialized correctly.\n";
-        DialogWithItemList::warning( message, warning_headerstamp );
+        DialogWithItemList::warning( message, _warning_headerstamp );
     }
 
-    if( !warning_cancellation.empty() )
+    if( !_warning_cancellation.empty() )
     {
         QString message = "During the parsing process, one or more conversions to double failed"
                           " because of numerical cancellation.\n"
-                          "This happens when the absolute value of a long integer exceed 2^52.\n\n"
+                          "This happens when the absolute value of a long integer exceeds 2^52.\n\n"
                           "You have been warned... don't trust the following timeseries\n";
-        DialogWithItemList::warning( message, warning_cancellation );
+        DialogWithItemList::warning( message, _warning_cancellation );
     }
     return plot_map;
 }
