@@ -366,7 +366,7 @@ void TopicPublisherROS::updateState(double current_time)
 
     for(const auto& data_it:  _datamap->user_defined )
     {
-        const std::string& topic_name = data_it.first;
+        const std::string& topic_name = data_it.first->toStr();
         const PlotDataAny& plot_any = data_it.second;
         if( !toPublish(topic_name) )
         {

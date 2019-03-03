@@ -7,14 +7,15 @@
 #include <map>
 #include <mutex>
 #include <deque>
-#include "PlotJuggler/optional.hpp"
-#include "PlotJuggler/any.hpp"
 #include <QDebug>
 #include <QColor>
 #include <type_traits>
 #include <cmath>
 #include <cstdlib>
 #include <unordered_map>
+#include "PlotJuggler/optional.hpp"
+#include "PlotJuggler/any.hpp"
+#include "PlotJuggler/tree.hpp"
 
 inline double Abs(double val)
 {
@@ -132,28 +133,42 @@ typedef PlotDataGeneric<double,double>  PlotData;
 typedef PlotDataGeneric<double, nonstd::any> PlotDataAny;
 
 
-typedef struct{
-  std::unordered_map<std::string, PlotData>     numeric;
-  std::unordered_map<std::string, PlotDataAny>  user_defined;
+struct PlotDataMapRef
+{
+    StringNode root;
 
-  std::unordered_map<std::string, PlotData>::iterator addNumeric(const std::string& name)
-  {
-      return numeric.emplace( std::piecewise_construct,
-                       std::forward_as_tuple(name),
-                       std::forward_as_tuple(name)
-                       ).first;
-  }
+    PlotDataMapRef(): root(nullptr) {}
+
+    std::unordered_map<const StringNode*, PlotData>     numeric;
+    std::unordered_map<const StringNode*, PlotDataAny>  user_defined;
+
+    std::unordered_map<const StringNode*, PlotData>::iterator
+    addNumeric(const std::string& category, const std::string& name)
+    {
+        auto name_node = category.empty() ?
+                    root.addChild(name) :
+                    root.addChild(category)->addChild(name);
+
+        return numeric.emplace( std::piecewise_construct,
+                                std::forward_as_tuple(name_node),
+                                std::forward_as_tuple(name)
+                                ).first;
+    }
 
 
-  std::unordered_map<std::string, PlotDataAny>::iterator addUserDefined(const std::string& name)
-  {
-      return user_defined.emplace( std::piecewise_construct,
-                                   std::forward_as_tuple(name),
-                                   std::forward_as_tuple(name)
-                                   ).first;
-  }
+    std::unordered_map<const StringNode*, PlotDataAny>::iterator
+    addUserDefined(const std::string& category, const std::string& name)
+    {
+        auto name_node = category.empty() ?
+                    root.addChild(name) :
+                    root.addChild(category)->addChild(name);
 
-} PlotDataMapRef;
+        return user_defined.emplace( std::piecewise_construct,
+                                     std::forward_as_tuple(name_node),
+                                     std::forward_as_tuple(name)
+                                     ).first;
+    }
+};
 
 
 //-----------------------------------

@@ -100,7 +100,7 @@ PlotDataMapRef DataLoadCSV::readDataFromFile(const QString &file_name, bool use_
     {
         const std::string& field_name = ( column_names[i] );
 
-        auto it = plot_data.addNumeric(field_name);
+        auto it = plot_data.addNumeric("", field_name);
 
         valid_field_names.push_back( field_name );
         plots_vector.push_back( &(it->second) );

@@ -27,7 +27,6 @@
 #include <QElapsedTimer>
 #include <QHeaderView>
 
-
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "ui_aboutdialog.h"
@@ -50,8 +49,8 @@ MainWindow::MainWindow(const QCommandLineParser &commandline_parser, QWidget *pa
     _minimized(false),
     _current_streamer(nullptr),
     _disable_undo_logging(false),
-    _tracker_param( CurveTracker::VALUE ),
-    _tracker_time(0)
+    _tracker_time(0),
+    _tracker_param( CurveTracker::VALUE )
 {
     QLocale::setDefault(QLocale::c()); // set as default
 
@@ -581,25 +580,37 @@ void MainWindow::buildDummyData()
     size_t SIZE = 10000;
     QElapsedTimer timer;
     timer.start();
-    QStringList  words_list;
-    words_list << "world/siam" << "world/tre" << "walk/piccoli" << "walk/porcellin"
-               << "fly/high/mai" << "fly/high/nessun" << "fly/low/ci" << "fly/low/dividera"
-               << "data_1" << "data_2" << "data_3" << "data_10";
+    std::vector<std::pair<std::string, std::string>>  words_list;
+    words_list.push_back( {"world", "siam"} );
+    words_list.push_back( {"world", "tre"} );
+    words_list.push_back( {"world", "piccoli"} );
+    words_list.push_back( {"world", "porcellin"} );
+
+    words_list.push_back( {"fly", "high/mai"} );
+    words_list.push_back( {"fly", "high/nessun"} );
+    words_list.push_back( {"fly", "low/ci"} );
+    words_list.push_back( {"fly", "low/dividera"} );
+
+    words_list.push_back( {"", "data_0"} );
+    words_list.push_back( {"", "data_1"} );
+    words_list.push_back( {"", "data_2"} );
+    words_list.push_back( {"", "data_10"} );
+
 
     for( int i=0; i<10; i++)
     {
-        words_list.append(QString("data_vect/%1").arg(count++));
+        words_list.push_back( {"data_vect", std::to_string(count++)} );
     }
 
-    for( const QString& name: words_list)
+    for( const auto& name_it: words_list)
     {
         double A =  6* ((double)qrand()/(double)RAND_MAX) - 3;
         double B =  3* ((double)qrand()/(double)RAND_MAX)  ;
         double C =  3* ((double)qrand()/(double)RAND_MAX)  ;
         double D =  20* ((double)qrand()/(double)RAND_MAX)  ;
 
-        auto it = datamap.addNumeric( name.toStdString() );
-        PlotData& plot = it->second;
+        auto plot_it = datamap.addNumeric( name_it.first, name_it.second );
+        PlotData& plot = plot_it->second;
 
         double t = 0;
         for (unsigned indx=0; indx<SIZE; indx++)
@@ -609,8 +620,8 @@ void MainWindow::buildDummyData()
         }
     }
 
-    PlotData& sin_plot =  datamap.addNumeric( "_sin" )->second;
-    PlotData& cos_plot =  datamap.addNumeric( "_cos" )->second;
+    PlotData& sin_plot =  datamap.addNumeric("", "_sin" )->second;
+    PlotData& cos_plot =  datamap.addNumeric("", "_cos" )->second;
 
     double t = 0;
     for (unsigned indx=0; indx<SIZE; indx++)
