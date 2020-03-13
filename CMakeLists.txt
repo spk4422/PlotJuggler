@@ -10,18 +10,20 @@ cmake_policy (SET CMP0020 NEW)
 
 add_definitions(
     -DPJ_MAJOR_VERSION=2
-    -DPJ_MINOR_VERSION=3
-    -DPJ_PATCH_VERSION=0 )
+    -DPJ_MINOR_VERSION=6
+    -DPJ_PATCH_VERSION=2 )
+
+add_subdirectory( 3rdparty/fmt )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTOUIC ON)
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1)
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif()
 
 if (NOT WIN32)
@@ -38,7 +40,17 @@ if(APPLE AND EXISTS /usr/local/opt/qt5)
 endif()
 
 
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets PrintSupport Concurrent Xml Qml)
+find_package(Qt5 REQUIRED COMPONENTS
+    Core
+    Widgets
+    Multimedia
+    MultimediaWidgets
+    PrintSupport
+    Concurrent
+    Qml
+    Xml
+    Svg)
+
 find_package(Qt5 QUIET COMPONENTS WebSockets)
 
 set( QT_LINK_LIBRARIES
@@ -47,9 +59,10 @@ set( QT_LINK_LIBRARIES
     Qt5::PrintSupport
     Qt5::Xml
     Qt5::Concurrent
-    Qt5::Qml
     Qt5::Multimedia
     Qt5::MultimediaWidgets
+    Qt5::Qml
+    Qt5::Svg
     )
 
 add_definitions( -DQWT_NO_SVG )
@@ -114,9 +127,14 @@ include_directories(
     ${Qt5WebSockets_INCLUDE_DIRS}
     ${Qt5Multimedia_INCLUDE_DIRS}
     ${Qt5MultimediaWidgets_INCLUDE_DIRS}
-    ./qwt/src
+    ${Qt5Svg_INCLUDE_DIRS}
     ./include
-    ./color_widgets/include
+    ./3rdparty/qwt/src
+    ./3rdparty/color_widgets/include
+    ./3rdparty/fmt/include
+    ./3rdparty/marl/include
+    ./3rdparty/sol
+    ./3rdparty/lua-5.3.4/src
 )
 
 #########################  INSTALL ####################################
@@ -125,16 +143,6 @@ if(COMPILING_WITH_CATKIN)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_LIB_DESTINATION})
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION})
-
-    INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/plotjuggler-icon.png
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-    INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/PlotJuggler.desktop
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-    INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/plotjuggler-icon.png
-        DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION})
-    INSTALL( FILES ${CMAKE_CURRENT_SOURCE_DIR}/PlotJuggler.desktop
-        DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_BIN_DESTINATION})
 
 else()
     set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
@@ -150,9 +158,12 @@ endif()
 
 #############################################################
 
-add_subdirectory( backward-cpp )
-add_subdirectory( color_widgets )
-add_subdirectory( qwt/src )
+
+add_subdirectory( 3rdparty/backward-cpp )
+add_subdirectory( 3rdparty/color_widgets )
+add_subdirectory( 3rdparty/marl )
+add_subdirectory( 3rdparty/qwt/src )
+add_subdirectory( 3rdparty/lua-5.3.4 )
 add_subdirectory( plotter_gui )
 
 add_subdirectory( plugins/DataLoadCSV )

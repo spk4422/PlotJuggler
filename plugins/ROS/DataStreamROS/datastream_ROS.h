@@ -30,7 +30,7 @@ public:
 
     virtual ~DataStreamROS() override;
 
-    virtual const char* name() const override { return "ROS Topic Streamer";  }
+    virtual const char* name() const override { return "ROS Topic Subscriber";  }
 
     virtual bool xmlSaveState(QDomDocument &doc, QDomElement &parent_element) const override;
 
@@ -49,8 +49,6 @@ private:
     PlotDataMapRef* _destination_data;
 
     void topicCallback(const topic_tools::ShapeShifter::ConstPtr& msg, const std::string &topic_name);
-
-    void clockCallback(const rosgraph_msgs::Clock::ConstPtr& msg);
 
     void extractInitialSamples();
 

@@ -7,44 +7,70 @@
 #include <QDesktopWidget>
 #include <QFontDatabase>
 #include <QSettings>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QJsonDocument>
 
-QString getFunnySubtitle(){
+#include "new_release_dialog.h"
 
+static QString VERSION_STRING = QString("%1.%2.%3").
+                                arg(PJ_MAJOR_VERSION).
+                                arg(PJ_MINOR_VERSION).
+                                arg(PJ_PATCH_VERSION);
+
+inline int GetVersionNumber(QString str)
+{
+  QStringList online_version = str.split('.');
+  int major = online_version[0].toInt();
+  int minor = online_version[1].toInt();
+  int patch = online_version[2].toInt();
+  return major*10000 + minor*100 + patch;
+}
+
+void OpenNewReleaseDialog(QNetworkReply *reply)
+{
+  if (reply->error()) {
+    return;
+  }
+  QString answer = reply->readAll();
+  QJsonDocument document = QJsonDocument::fromJson(answer.toUtf8());
+  QJsonObject data = document.object();
+  QString url = data["html_url"].toString();
+  QString name = data["name"].toString();
+  QString tag_name = data["tag_name"].toString();
+  QSettings settings;
+  int online_number = GetVersionNumber( tag_name );
+  QString dont_show = settings.value("NewRelease/dontShowThisVersion", VERSION_STRING).toString();
+  int dontshow_number = GetVersionNumber( dont_show );
+  int current_number = GetVersionNumber( VERSION_STRING );
+
+  if( online_number > current_number &&
+      online_number > dontshow_number )
+  {
+    NewReleaseDialog* dialog = new NewReleaseDialog(nullptr, tag_name, name, url );
+    dialog->show();
+  }
+}
+
+QPixmap getFunnySplashscreen(){
+
+    QSettings settings;
     qsrand(time(nullptr));
 
-    int n = qrand() % 20;
-    QSettings settings;
-    // do not repeat it twice in a row
-    while( settings.value("previousFunnySubtitle").toInt() == n)
-    {
-        n = qrand() % 20;
+    auto getNum = [](){
+        const int last_image_num = 51;
+        int n = qrand() % (last_image_num+2);
+        if ( n > last_image_num ){ n = 0; }
+        return n;
+    };
+    int n = getNum();
+    int prev_n = settings.value("previousFunnySubtitle").toInt();
+    while( n == prev_n ){
+        n = getNum();
     }
     settings.setValue("previousFunnySubtitle", n);
-
-    switch(n)
-    {
-    case 0: return "PlotJuggler does it better";
-    case 1: return "Talk is cheap, show me the data!";
-    case 2: return "The visualization tool that you deserve";
-    case 3: return "Who needs Matlab?";
-    case 4: return "Changing the world, one plot at a time";
-    case 5: return "\"Harry Plotter\" was also an option";
-    case 6: return "I like the smell of plots in the morning";
-    case 7: return "Timeseries, timeseries everywhere...";
-    case 8: return "I didn't find a better name...";
-    case 9: return "\"It won't take long to implement that\"\n"
-                   "... Davide, 2014";
-    case 10: return "Visualize data responsibly";
-    case 11: return "How could you live without it?";
-    case 12: return "This time you will find that nasty bug!";
-    case 13: return "Now, with less bugs than usual!";
-    case 14: return "You log them, I visualize them";
-    case 15: return "The fancy timeseries visualization tool";
-    case 16: return "Send me a PR with your splashscreen phrase!";
-
-    default: return "I don't always visualize data,\n"
-                    "but when I do, I use PlotJuggler";
-    }
+    auto filename = QString("://resources/memes/meme_%1.jpg").arg(n, 2, 10, QChar('0'));
+    return QPixmap(filename);
 }
 
 int main(int argc, char *argv[])
@@ -53,11 +79,6 @@ int main(int argc, char *argv[])
 
     app.setOrganizationName("IcarusTechnology");
     app.setApplicationName("PlotJuggler");
-
-    QString VERSION_STRING = QString("%1.%2.%3").
-            arg(PJ_MAJOR_VERSION).
-            arg(PJ_MINOR_VERSION).
-            arg(PJ_PATCH_VERSION);
 
     app.setApplicationVersion(VERSION_STRING);
 
@@ -101,15 +122,25 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    QIcon app_icon( ":/resources/office_chart_line_stacked.ico" );
+    QApplication::setWindowIcon(app_icon);
+
+    QNetworkAccessManager manager;
+    QObject::connect( &manager, &QNetworkAccessManager::finished, OpenNewReleaseDialog);
+
+    QNetworkRequest request;
+    request.setUrl(QUrl("https://api.github.com/repos/facontidavide/plotjuggler/releases/latest"));
+    manager.get(request);
+
     /*
      * You, fearless code reviewer, decided to start a journey into my source code.
-     * For your bravery, you deserve to know the truth, no matter how hard it is to accept it.
+     * For your bravery, you deserve to know the truth.
      * The splashscreen is useless; not only it is useless, it will make your start-up
-     * time slower by a couple of seconds for absolutely no reason.
+     * time slower by few seconds for absolutely no reason.
      * But what are two seconds compared with the time that PlotJuggler will save you?
      * The splashscreen is the connection between me and my users, the glue that keeps
      * together our invisible relationship.
-     * Now it is up to you to decide: you can block the splashscreen forever or not,
+     * Now, it is up to you to decide: you can block the splashscreen forever or not,
      * reject a message that brings a little of happiness into your day, spent analyzing data.
      * Please don't do it.
      */
@@ -117,44 +148,8 @@ int main(int argc, char *argv[])
     if( !parser.isSet(nosplash_option) && !( parser.isSet(loadfile_option) || parser.isSet(layout_option) ) )
     // if(false) // if you uncomment this line, a kitten will die somewhere in the world.
     {
-        QPixmap main_pixmap(":/resources/splash_2.2.jpg");
-
-        int font_id = QFontDatabase::addApplicationFont(":/resources/DejaVuSans-ExtraLight.ttf");
-        QString family = QFontDatabase::applicationFontFamilies(font_id).at(0);
-        QFont font(family);
-        font.setStyleStrategy(QFont::PreferAntialias);
-
-        QPainter painter;
-        painter.begin( &main_pixmap);
-        painter.setPen(QColor(255, 255, 255));
-        painter.setRenderHint(QPainter::TextAntialiasing, true);
-
-        const QString subtitle = getFunnySubtitle();
-
-        {
-            const int margin = 20;
-            const int text_height = 100;
-            const int text_width = main_pixmap.width() - margin*2;
-            QPoint topleft(margin, main_pixmap.height() - text_height);
-            QSize rect_size(text_width, text_height);
-            font.setPointSize( 16 );
-            painter.setFont( font );
-            painter.drawText( QRect(topleft, rect_size),
-                              Qt::AlignHCenter | Qt::AlignVCenter, subtitle );
-        }
-        {
-            const int text_width = 100;
-            QPoint topleft( main_pixmap.width() - text_width, 0);
-            QSize rect_size( text_width, 40 );
-            font.setPointSize( 14 );
-            painter.setFont( font );
-            painter.drawText( QRect(topleft, rect_size),
-                              Qt::AlignHCenter | Qt::AlignVCenter, VERSION_STRING );
-        }
-
-        painter.end();
-
-        QSplashScreen splash(main_pixmap);
+        QPixmap main_pixmap = getFunnySplashscreen();
+        QSplashScreen splash(main_pixmap, Qt::WindowStaysOnTopHint);
         QDesktopWidget* desktop = QApplication::desktop();
         const int scrn = desktop->screenNumber(QCursor::pos());
         const QPoint currentDesktopsCenter = desktop->availableGeometry(scrn).center();
@@ -162,25 +157,28 @@ int main(int argc, char *argv[])
 
         splash.show();
         app.processEvents();
-        splash.raise();
 
-        const auto deadline = QDateTime::currentDateTime().addMSecs( 100*(30 + subtitle.size()*0.4) );
+        auto deadline = QDateTime::currentDateTime().addMSecs( 500 );
+        while( QDateTime::currentDateTime() < deadline)
+        {
+          app.processEvents();
+        }
 
-        MainWindow w( parser );
+        MainWindow w(parser);
+
+        deadline = QDateTime::currentDateTime().addMSecs( 3000 );
         while( QDateTime::currentDateTime() < deadline && !splash.isHidden() )
         {
-            app.processEvents();
-            QThread::msleep(100);
-            splash.raise();
+          app.processEvents();
         }
-        splash.close();
+
+        w.setWindowIcon(app_icon);
         w.show();
+        splash.finish(&w);
         return app.exec();
     }
-    else{
-        MainWindow w( parser );
-        w.show();
-        return app.exec();
-    }
-    return 0;
+    MainWindow w(parser);
+    w.setWindowIcon(app_icon);
+    w.show();
+    return app.exec();
 }

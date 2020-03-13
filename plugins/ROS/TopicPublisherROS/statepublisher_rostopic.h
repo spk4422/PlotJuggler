@@ -11,7 +11,7 @@
 #include "../shape_shifter_factory.hpp"
 #include <rosbag/bag.h>
 
-class  TopicPublisherROS: public QObject, StatePublisher
+class  TopicPublisherROS: public StatePublisher
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "com.icarustechnology.PlotJuggler.StatePublisher" "../statepublisher.json")
@@ -23,7 +23,7 @@ public:
 
     virtual void updateState(double current_time) override;
 
-    virtual const char* name() const override { return "TopicPublisherROS"; }
+    virtual const char* name() const override { return "ROS Topic Re-Publisher"; }
 
     virtual bool enabled() const override { return _enabled; }
 
@@ -45,6 +45,7 @@ private:
     ros::NodeHandlePtr _node;
     bool _publish_clock;
     std::unique_ptr<tf::TransformBroadcaster> _tf_publisher;
+    ros::Publisher _tf_static_pub;
     ros::Publisher _clock_publisher;
 
     QAction* _enable_self_action;

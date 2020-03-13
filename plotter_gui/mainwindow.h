@@ -41,7 +41,9 @@ public:
 
 public slots:
 
-    void resizeEvent(QResizeEvent *) ;
+    void resizeEvent(QResizeEvent *);
+    void showEvent(QShowEvent *ev);
+
 
     // Undo - Redo
     void onUndoableChange();
@@ -190,7 +192,7 @@ public slots:
     void on_actionDeleteAllData_triggered();
     void on_actionClearBuffer_triggered();
 
-    void on_actionFullscreen_triggered();
+    void onActionFullscreenTriggered();
 
     void on_actionReportBug_triggered();
     void on_actionCheatsheet_triggered();
@@ -214,6 +216,8 @@ public slots:
 private slots:
     void on_stylesheetChanged(QString style_name);
     void on_actionPreferences_triggered();
+    void on_actionShare_the_love_triggered();
+    void on_playbackStep_valueChanged(double arg1);
 };
 
 
