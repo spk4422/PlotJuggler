@@ -32,8 +32,6 @@ public:
 
     virtual bool xmlLoadState(const QDomElement &parent_element ) override;
 
-    virtual void addActionsToParentMenu( QMenu* menu ) override;
-
 private:
 
     struct Parameters{

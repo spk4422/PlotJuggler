@@ -135,7 +135,6 @@ include_directories(
     ./3rdparty/marl/include
     ./3rdparty/sol
     ./3rdparty/lua-5.3.4/src
-    ./3rdparty/liblsl/include
 )
 
 #########################  INSTALL ####################################
@@ -165,7 +164,6 @@ add_subdirectory( 3rdparty/color_widgets )
 add_subdirectory( 3rdparty/marl )
 add_subdirectory( 3rdparty/qwt/src )
 add_subdirectory( 3rdparty/lua-5.3.4 )
-add_subdirectory( 3rdparty/liblsl )
 add_subdirectory( plotter_gui )
 
 add_subdirectory( plugins/DataLoadCSV )
