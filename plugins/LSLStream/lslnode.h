@@ -2,10 +2,9 @@
 #define LSLNODE_H
 
 #include <QtPlugin>
-#include <QStringListModel>
 #include <QMenu>
 #include <thread>
-#include <lsl_cpp.h>
+#include "LSL/include/lsl_cpp.h"
 #include "PlotJuggler/datastreamer_base.h"
 
 class LSLNode : public DataStreamer
@@ -18,20 +17,19 @@ public:
 
   LSLNode();
 
-  //inhereted functions
-  virtual const char* name() const{return PLUGIN_NAME_.c_str();}
+  virtual ~LSLNode() {}
 
-  virtual bool start(QStringList*);
+  virtual const char* name() const override {return PLUGIN_NAME_.c_str();}
 
-  virtual void shutdown();
+  virtual bool start(QStringList*) override;
 
-  virtual bool isRunning() const;
+  virtual void shutdown() override;
 
-  virtual std::vector<QString> appendData(PlotDataMapRef& destination);
+  virtual bool isRunning() const override;
+
+  virtual bool isDebugPlugin() override { return false; }
 
   std::vector<lsl::stream_info> getAvailableStreams();
-
-  virtual void addActionsToParentMenu( QMenu* menu ) override;
 
 signals:
 
@@ -41,7 +39,7 @@ private:
 
 
   QAction* _action_LSL;
-  const std::string PLUGIN_NAME_ = "LSL";
+  const std::string PLUGIN_NAME_ = "LSL Stream";
   lsl::stream_outlet *outlet_;
   std::thread thread_;
   bool is_running_ = false;
