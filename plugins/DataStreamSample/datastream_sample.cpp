@@ -75,7 +75,13 @@ bool DataStreamSample::xmlSaveState(QDomDocument &doc, QDomElement &parent_eleme
 
 bool DataStreamSample::xmlLoadState(const QDomElement &parent_element)
 {
-    return true;
+  return true;
+}
+
+void DataStreamSample::addActionsToParentMenu(QMenu *menu)
+{
+  _action_LSL = new QAction(QString("Start LSL STREAM"), menu);
+  menu->addAction( _action_LSL );
 }
 
 void DataStreamSample::pushSingleCycle()

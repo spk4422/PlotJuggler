@@ -32,6 +32,8 @@ public:
 
     virtual bool xmlLoadState(const QDomElement &parent_element ) override;
 
+    virtual void addActionsToParentMenu( QMenu* menu ) override;
+
 private:
 
     struct Parameters{
@@ -45,6 +47,9 @@ private:
     bool _running;
 
     std::map<std::string,Parameters> _parameters;
+
+    QAction* _action_LSL;
+
 
     void pushSingleCycle();
 };
