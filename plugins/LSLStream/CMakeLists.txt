@@ -14,9 +14,9 @@ if(APPLE)
 endif()
 
 if(UNIX AND NOT APPLE)
-    # for Linux, BSD, Solaris, Minix
+    # for MacOS X or iOS, watchOS, tvOS (since 3.10.3)
     set_target_properties(LSL PROPERTIES
-      IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/LSL/lib/liblsl64.so"
+      IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/LSL/lib/liblsl.so"
       INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/LSL/include"
     )
 endif()
