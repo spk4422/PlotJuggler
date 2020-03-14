@@ -7,6 +7,7 @@
 #include "LSL/include/lsl_cpp.h"
 #include "PlotJuggler/datastreamer_base.h"
 
+#define PRINT_FUNCTION_NAME std::cout << __FUNCTION__ << std::endl;
 class LSLNode : public DataStreamer
 {
   Q_OBJECT
@@ -17,6 +18,7 @@ public:
 
   LSLNode();
 
+  void initPlot(lsl::stream_info stream_info);
   virtual ~LSLNode() {}
 
   virtual const char* name() const override {return PLUGIN_NAME_.c_str();}
@@ -34,11 +36,13 @@ public:
 signals:
 
 private:
+
+  void plotFrame(const std::vector<float> &frame);
   void run(bool is_running);
   void pullData(lsl::stream_info stream_info);
 
 
-  QAction* _action_LSL;
+  QAction* action_LSL_;
   const std::string PLUGIN_NAME_ = "LSL Stream";
   lsl::stream_outlet *outlet_;
   std::thread thread_;

@@ -14,6 +14,7 @@ if(APPLE)
 endif()
 
 if(UNIX AND NOT APPLE)
+	message(${CMAKE_CURRENT_SOURCE_DIR})
     # for MacOS X or iOS, watchOS, tvOS (since 3.10.3)
     set_target_properties(LSL PROPERTIES
       IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/LSL/lib/liblsl.so"
@@ -40,3 +41,13 @@ if(COMPILING_WITH_CATKIN)
 else()
     install(TARGETS LSLStream DESTINATION bin )
 endif()
+
+
+########### add UI components ##################
+
+
+
+
+
+
+
