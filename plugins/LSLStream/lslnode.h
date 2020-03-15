@@ -6,6 +6,7 @@
 #include <thread>
 #include "LSL/include/lsl_cpp.h"
 #include "PlotJuggler/datastreamer_base.h"
+#include "dialogselectlslstream.h"
 
 #define PRINT_FUNCTION_NAME std::cout << __FUNCTION__ << std::endl;
 class LSLNode : public DataStreamer
