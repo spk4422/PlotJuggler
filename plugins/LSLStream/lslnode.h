@@ -8,6 +8,7 @@
 //#include "LSL/include/lsl_cpp.h"
 #include "lslstream.h"
 #include "PlotJuggler/datastreamer_base.h"
+#include "dialogselectlslstream.h"
 
 
 class LSLNode : public DataStreamer

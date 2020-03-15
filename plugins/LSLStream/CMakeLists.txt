@@ -1,7 +1,26 @@
+include_directories( ./ ../  ../../include  ../../common)
+
+# Qt related stuff
+set(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTOUIC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 add_definitions(${QT_DEFINITIONS})
 add_definitions(-DQT_PLUGIN)
 
-#QT5_WRAP_UI ( UI_SRC  ../common/selectlistdialog.ui  )
+
+SET( SRC
+    lslnode.cpp
+    lslnode.h
+    dialogselectlslstream.cpp
+    dialogselectlslstream.h
+    ../../include/PlotJuggler/datastreamer_base.h
+    )
+
+QT5_WRAP_UI ( LSL_UI_SRC
+    dialogselectlslstream.ui
+    )
+
 
 add_library(LSL SHARED IMPORTED) # or STATIC instead of SHARED
 
@@ -35,14 +54,6 @@ SET( SRC
 add_library(LSLStream SHARED ${SRC} ${UI_SRC} )
 target_link_libraries(LSLStream ${Qt5Widgets_LIBRARIES} ${Qt5Xml_LIBRARIES} LSL)
 
-if(COMPILING_WITH_CATKIN)
-    install(TARGETS DataStreamSample
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
-else()
-    install(TARGETS LSLStream DESTINATION bin )
-endif()
 
 
 ########### add UI components ##################
