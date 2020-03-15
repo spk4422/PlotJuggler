@@ -27,6 +27,8 @@ include_directories( ./ ../  ../../include  ../../common)
 
 SET( SRC
     lslnode.cpp
+    lslstream.cpp
+    ThreadSafeVariable.h
     ../../include/PlotJuggler/datastreamer_base.h
     )
 
