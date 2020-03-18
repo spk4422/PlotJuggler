@@ -33,6 +33,7 @@ void LSLNode::shutdown()
   run(false);
   setStreamsCMD(LSLStream::CMD::STOP);
 }
+
 bool LSLNode::isRunning() const
 {
   //  PRINT_FUNCTION_NAME

@@ -33,16 +33,12 @@ if(APPLE)
 endif()
 
 if(UNIX AND NOT APPLE)
-	message(${CMAKE_CURRENT_SOURCE_DIR})
-    # for MacOS X or iOS, watchOS, tvOS (since 3.10.3)
     set_target_properties(LSL PROPERTIES
       IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/LSL/lib/liblsl.so"
       INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/LSL/include"
     )
 endif()
 
-
-include_directories( ./ ../  ../../include  ../../common)
 
 SET( SRC
     lslnode.cpp
@@ -53,6 +49,8 @@ SET( SRC
 
 add_library(LSLStream SHARED ${SRC} ${UI_SRC} )
 target_link_libraries(LSLStream ${Qt5Widgets_LIBRARIES} ${Qt5Xml_LIBRARIES} LSL)
+
+message("LSL" ${LSL})
 
 
 
