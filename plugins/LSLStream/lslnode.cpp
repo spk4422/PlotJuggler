@@ -2,171 +2,177 @@
 #include <iostream>
 #include <bits/stdc++.h>
 #include  <utility>
+
 LSLNode::LSLNode()
 {
-  worker_thread_cmd_.set(LSLStream::CMD::IDLE);
-  getAvailableStreams();
+    //    worker_thread_cmd_.set(LSLStream::CMD::IDLE);
+    run(false);
+}
+
+LSLNode::~LSLNode()
+{
+    shutdown();
+}
+
+bool LSLNode::xmlSaveState(QDomDocument &doc, QDomElement &parent_element) const
+{
+
+    return true;
+}
+
+bool LSLNode::xmlLoadState(const QDomElement &parent_element)
+{
+
+    return true;
 }
 
 
 bool LSLNode::start(QStringList *)
 {
-  PRINT_FUNCTION_NAME
-  // make an inlet to get data from it
-  std::cout << "Now creating the inlet..." << std::endl;
 
-  if(streams_.empty())
-  {
-    std::cout << "CAN'T FIND SHIT!!!!!!!!!" << std::endl;
-    return false;
-  }
-  run(true);
-  initializeStreamsPlots();
-  setStreamsCMD(LSLStream::CMD::START);
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  worker_thread_cmd_.set(LSLStream::CMD::START);
-  return true;
+    //    DialogSelectLSLStream dialog;
+
+    //    int res = dialog.exec();
+
+    //    QStringList selection = dialog.getSelectedStreams();
+
+
+
+    //    if( res != QDialog::Accepted || selection.empty() )
+    //    {
+    //        return false;
+    //    }
+
+
+    //    qDebug() << selection;
+
+
+    {
+        std::lock_guard<std::mutex> lock( mutex() );
+        dataMap().numeric.clear();
+        dataMap().user_defined.clear();
+    }
+
+    getAvailableStreams();
+
+
+    if(streams_.empty())
+    {
+        std::cout << "CAN'T FIND SHIT!!!!!!!!!" << std::endl;
+        return false;
+    }
+
+    //    for(auto stream : streams_)
+    //    {
+    //        initializeStreamPlot(stream);
+    //    }
+
+    //initializeStreamsPlots();
+
+    run(true);
+    worker_thread_ = std::thread(&LSLNode::loop, this);
+
+    return true;
 }
 
 void LSLNode::shutdown()
 {
-  run(false);
-  setStreamsCMD(LSLStream::CMD::STOP);
+    run(false);
+    setStreamsCMD(LSLStream::CMD::STOP);
+
+    if( worker_thread_.joinable()) worker_thread_.join();
 }
 
 bool LSLNode::isRunning() const
 {
-  //  PRINT_FUNCTION_NAME
-  return is_running_.get();
+//    std::cout << "isRunning " << is_running_.get() << std::endl;
+    return is_running_.get();
 }
 
 bool LSLNode::getAvailableStreams()
 {
-  PRINT_FUNCTION_NAME
-  std::cout << "Now resolving streams..." << std::endl;
-  std::vector<lsl::stream_info> available_streams_ = lsl::resolve_streams(1.0);;
-  if(available_streams_.empty())
-  {
-    std::cout << "CAN'T FIND SHIT!!!!!!!!!" << std::endl;
-    return false;
-  }
+    std::cout << "Now resolving streams..." << std::endl;
+    std::vector<lsl::stream_info> available_streams_ = lsl::resolve_streams();
+    if(available_streams_.empty())
+    {
+        std::cout << "CAN'T FIND SHIT!!!!!!!!!" << std::endl;
+        return false;
+    }
 
-  std::cout << "TOTAL NUMBER OF STREAMS FOUND " << available_streams_.size() << std::endl;
-  for(lsl::stream_info stream_info : available_streams_)
-  {
-    streams_.push_back(new LSLStream(stream_info));
-  }
+    std::cout << "TOTAL NUMBER OF STREAMS FOUND " << available_streams_.size() << std::endl;
+    for(lsl::stream_info stream_info : available_streams_)
+    {
+        streams_.push_back(new LSLStream(stream_info));
+    }
 
-  return true;
+    return true;
 }
 
 void LSLNode::initializeStreamPlot(LSLStream* stream)
 {
-  std::vector<std::string> channel_names = stream->streamChannelsIDs();
-  PRINT_FUNCTION_NAME
-  for (std::string name : channel_names)
-  {
-    std::cout << "Channel Name: " << name <<std::endl;
-    dataMap().addNumeric(name);
-  }
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  worker_thread_ = std::thread(&LSLNode::plotFrame,this);
+    std::vector<std::string> channel_names = stream->streamChannelsIDs();
+
+    for (std::string name : channel_names)
+    {
+        std::cout << "Channel Name: " << name <<std::endl;
+        dataMap().addNumeric(name);
+    }
 }
 
 //loop over each stream fetch latest data frame -> update plots
-void LSLNode::plotFrame()
+void LSLNode::loop()
 {
-  PRINT_FUNCTION_NAME
-  while(isRunning())
-  {
-    if (worker_thread_cmd_.get()!=LSLStream::CMD::START)
-    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-      continue;
+    for(auto stream : streams_) {
+        stream->init();
     }
 
-    static std::chrono::high_resolution_clock::time_point initial_time = std::chrono::high_resolution_clock::now();
-    const double offset = std::chrono::duration_cast< std::chrono::duration<double>>( initial_time.time_since_epoch() ).count() ;
-    auto now =  std::chrono::high_resolution_clock::now();
-    for(LSLStream* stream : streams_)
-    {
-      std::vector<std::string> channel_names = stream->streamChannelsIDs();
+    setStreamsCMD(LSLStream::CMD::START);
+    //    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-      for(std::string channel_id : channel_names)
-      {
-         std::lock_guard<std::mutex> lock( mutex() );
+    //worker_thread_cmd_.set(LSLStream::CMD::START);
 
-        std::unordered_map<std::string, PlotData>::iterator it = dataMap().numeric.find(channel_id);
-
-        std::cout << "Channel Id: " << channel_id << std::endl;
-
-//        if( it != dataMap().numeric.end())
-//        {
-//        PRINT_LINEgetDataChunks
-          std::vector<std::vector<std::pair<double, double>>> stream_data_chunk = stream->getDataChunks();
-//          std::cout << "stream_data_chunk Size: " << stream_data_chunk.size() << std::endl;
-        if(stream_data_chunk.empty())
-          continue;
-        int index =0 ;
-        for (auto& it: dataMap().numeric )
-        {
-
-          if( it.first == "empty")  throw;
-
-          std::cout << "Keys: " << it.first << std::endl;
-          auto& plot = it.second;
-//          std::cout << "Plot Itereator Index: " <<  index << std::endl;
-//          std::cout << "Curr Frame Size: " << stream_data_chunk.at(index).size() << std::endl;
-//          PlotData& plot = it->second;
-//          std::vector<std::vector<std::pair<double, double>>> stream_data_chunk = stream->getDataChunks();
-          const double t = std::chrono::duration_cast< std::chrono::duration<double>>( now - initial_time ).count() ;
-          std::cout << "Timestamp: " << stream_data_chunk.at(index).back().second << " t + offset : " <<  t + offset << std::endl;
-          std::cout << "Value: " << stream_data_chunk.at(index).back().first << std::endl;
-          plot.pushBack( PlotData::Point( stream_data_chunk.at(index).back().second, stream_data_chunk.at(index).back().first ));
-          index++;
-          //          for(const std::vector<std::pair<double, double>>& channel : stream_data_chunk)
-//          {
-//            for(const std::pair<double, double>& data_point_time_stamp_pair : channel)
-//            {
-//                std::cout << "Data Timestamp: " << data_point_time_stamp_pair.second << std::endl;
-//                plot.pushBack(PlotData::Point(data_point_time_stamp_pair.second, data_point_time_stamp_pair.first));
-//            }
-//          }
-        }
-//        }
-//        else
-//        {
-
-//          std::cout<< "CANT FIND CHANNEL?? " <<  channel_id << std::endl;
-//          throw;
-//        }
-      }
+    while(isRunning()) {
+        pushSingleCycle();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    //sleep
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
 }
 
 void LSLNode::setStreamsCMD(LSLStream::CMD cmd)
 {
-  for(auto stream : streams_)
-  {
-    stream->setStreamCMD(cmd);
-  }
+    for(auto stream : streams_)
+    {
+        stream->setStreamCMD(cmd);
+    }
 }
 
-
-void LSLNode::initializeStreamsPlots()
-{
-  PRINT_FUNCTION_NAME
-  for(auto stream : streams_)
-  {
-    initializeStreamPlot(stream);
-    stream->init();
-  }
-}
 
 void LSLNode::run(bool is_running)
 {
-  is_running_.set(is_running);
+    is_running_.set(is_running);
+}
+
+void LSLNode::pushSingleCycle()
+{
+    std::lock_guard<std::mutex> lock( mutex() );
+
+    for(LSLStream* stream : streams_)
+    {
+        std::vector<std::vector<std::pair<double, double>>> stream_data_chunk = stream->getDataChunks();
+
+        if(stream_data_chunk.empty())
+            continue;
+
+        std::vector<std::string> channel_names = stream->streamChannelsIDs();
+
+        for (unsigned int i = 0; i < channel_names.size(); ++i) {
+            std::string ch = channel_names[i];
+            auto index_it = dataMap().numeric.find(ch);
+
+            if( index_it == dataMap().numeric.end()) {
+                index_it = dataMap().addNumeric(ch);
+            }
+
+            index_it->second.pushBack( PlotData::Point( stream_data_chunk.at(i).back().second, stream_data_chunk.at(i).back().first ));
+        }
+    }
 }

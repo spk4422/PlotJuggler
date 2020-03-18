@@ -13,34 +13,40 @@
 
 class LSLNode : public DataStreamer
 {
-  Q_OBJECT
-  Q_PLUGIN_METADATA(IID "com.icarustechnology.PlotJuggler.DataStreamer" "../datastreamer.json")
-  Q_INTERFACES(DataStreamer)
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "com.icarustechnology.PlotJuggler.DataStreamer" "../datastreamer.json")
+    Q_INTERFACES(DataStreamer)
 
 public:
-  LSLNode();
-  virtual ~LSLNode() {}
-  virtual const char* name() const override {return PLUGIN_NAME_.c_str();}
-  virtual bool start(QStringList*) override;
-  virtual void shutdown() override;
-  virtual bool isRunning() const override;
-  virtual bool isDebugPlugin() override { return false; }
+    LSLNode();
+    virtual bool start(QStringList*) override;
+    virtual void shutdown() override;
+    virtual bool isRunning() const override;
+    virtual ~LSLNode();
+    virtual const char* name() const override {return PLUGIN_NAME_.c_str();}
+    virtual bool isDebugPlugin() override { return false; }
+    virtual bool xmlSaveState(QDomDocument &doc, QDomElement &parent_element) const override;
+    virtual bool xmlLoadState(const QDomElement &parent_element ) override;
 
 signals:
 
 private:
-  void initializeStreamPlot(LSLStream *stream);
-  bool getAvailableStreams();
-  void plotFrame();
-  void setStreamsCMD(LSLStream::CMD cmd);
-  void initializeStreamsPlots();
-  void run(bool is_running);
-  QAction* action_LSL_;
-  const std::string PLUGIN_NAME_ = "LSL Stream";
-  ThreadSafeVariable<bool> is_running_;
-  ThreadSafeVariable<LSLStream::CMD> worker_thread_cmd_;
-  std::vector<LSLStream*> streams_;
-  std::thread worker_thread_;
+    void initializeStreamPlot(LSLStream *stream);
+    bool getAvailableStreams();
+    void loop();
+    void setStreamsCMD(LSLStream::CMD cmd);
+    void run(bool is_running);
+
+    void pushSingleCycle();
+
+    QAction* action_LSL_;
+    const std::string PLUGIN_NAME_ = "LSL Stream";
+    ThreadSafeVariable<bool> is_running_;
+    //ThreadSafeVariable<LSLStream::CMD> worker_thread_cmd_;
+
+    std::vector<LSLStream*> streams_;
+    std::thread worker_thread_;
+
 };
 
 #endif // LSLNODE_H
