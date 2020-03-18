@@ -20,26 +20,23 @@ public:
     } CMD;
 
     LSLStream(lsl::stream_info stream_info);
-
     ~LSLStream(){}
-
-    std::vector<std::vector<std::pair<double, double>>> getDataChunks();
 
     CMD getStreamCMD() const;
     void setStreamCMD(const CMD & stream_command);
     void init();
-    lsl::stream_info getStreaminfo() const;
 
-    //  void fetchDataChunks(lsl::stream_inlet &stream_inlet, ThreadSafeVariable<std::vector<std::vector<std::pair<double, double>>>> &stream_data_chunks);
     void fetchDataChunks();
-
+    lsl::stream_info getStreaminfo() const;
     std::vector<std::string> streamChannelsIDs();
+    std::vector<std::vector<std::pair<double, double>>> getDataChunks();
 
 private:
     std::thread thread_;
     lsl::stream_inlet* stream_inlet_;
     lsl::stream_info stream_info_;
     ThreadSafeVariable<CMD> stream_command_;
+
     void pullData(lsl::stream_info stream_info);
     ThreadSafeVariable<std::vector<std::vector<std::pair<double, double>>>> stream_data_chunks_;
 

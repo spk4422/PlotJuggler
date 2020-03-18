@@ -1,5 +1,6 @@
 #include "dialogselectlslstream.h"
 #include "ui_dialogselectlslstream.h"
+#include <QtDebug>
 
 DialogSelectLSLStream::DialogSelectLSLStream(QWidget *parent) :
     QDialog(parent),
@@ -21,10 +22,12 @@ QStringList DialogSelectLSLStream::getSelectedStreams()
 {
     QStringList selected_streams;
 
-    QModelIndexList list =ui->tableView->selectionModel()->selectedIndexes();
+    QModelIndexList list =ui->tableView->selectionModel()->selectedRows(0);
+
 
     foreach(const QModelIndex &index, list){
-        selected_streams.append( index.data(Qt::DisplayRole ).toString());
+        selected_streams.append(index.data(Qt::DisplayRole).toString());
+        qDebug() << "Selected Indexes : " << index.data(Qt::DisplayRole).toString();
     }
 
     return selected_streams;
@@ -44,7 +47,7 @@ void DialogSelectLSLStream::resolveLSLStreams()
 
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
-    for (int i = 0; i < streams.size(); ++i) {
+    for (unsigned int i = 0; i < streams.size(); ++i) {
 
         lsl::stream_info info = streams.at(i);
 

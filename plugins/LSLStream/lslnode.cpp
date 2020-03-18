@@ -1,12 +1,12 @@
 #include "lslnode.h"
 #include <iostream>
 #include <bits/stdc++.h>
-#include  <utility>
+#include <utility>
+#include <QMessageBox>
 
 LSLNode::LSLNode()
 {
-    //    worker_thread_cmd_.set(LSLStream::CMD::IDLE);
-    run(false);
+    setRunning(false);
 }
 
 LSLNode::~LSLNode()
@@ -14,37 +14,19 @@ LSLNode::~LSLNode()
     shutdown();
 }
 
-bool LSLNode::xmlSaveState(QDomDocument &doc, QDomElement &parent_element) const
-{
-
-    return true;
-}
-
-bool LSLNode::xmlLoadState(const QDomElement &parent_element)
-{
-
-    return true;
-}
-
-
 bool LSLNode::start(QStringList *)
 {
 
-    //    DialogSelectLSLStream dialog;
+    DialogSelectLSLStream dialog;
 
-    //    int res = dialog.exec();
+    int res = dialog.exec();
 
-    //    QStringList selection = dialog.getSelectedStreams();
-
-
-
-    //    if( res != QDialog::Accepted || selection.empty() )
-    //    {
-    //        return false;
-    //    }
+    QStringList selection = dialog.getSelectedStreams();
 
 
-    //    qDebug() << selection;
+    if( res != QDialog::Accepted || selection.empty() ) {
+        return false;
+    }
 
 
     {
@@ -53,23 +35,12 @@ bool LSLNode::start(QStringList *)
         dataMap().user_defined.clear();
     }
 
-    getAvailableStreams();
-
-
-    if(streams_.empty())
-    {
-        std::cout << "CAN'T FIND SHIT!!!!!!!!!" << std::endl;
+    if(!initStreams(selection)) {
+        QMessageBox::information(nullptr, tr("Info"), tr("Cannot find any streams!, Make sure LSL Node is running!"));
         return false;
     }
 
-    //    for(auto stream : streams_)
-    //    {
-    //        initializeStreamPlot(stream);
-    //    }
-
-    //initializeStreamsPlots();
-
-    run(true);
+    setRunning(true);
     worker_thread_ = std::thread(&LSLNode::loop, this);
 
     return true;
@@ -77,49 +48,48 @@ bool LSLNode::start(QStringList *)
 
 void LSLNode::shutdown()
 {
-    run(false);
+    setRunning(false);
     setStreamsCMD(LSLStream::CMD::STOP);
 
+
+    for (unsigned int i = 0; i < streams_.size(); ++i) {
+        streams_[i]->setStreamCMD(LSLStream::CMD::STOP);
+    }
+
     if( worker_thread_.joinable()) worker_thread_.join();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    qDeleteAll(streams_);
 }
 
 bool LSLNode::isRunning() const
 {
-//    std::cout << "isRunning " << is_running_.get() << std::endl;
     return is_running_.get();
 }
 
-bool LSLNode::getAvailableStreams()
+bool LSLNode::initStreams(QStringList streams)
 {
-    std::cout << "Now resolving streams..." << std::endl;
-    std::vector<lsl::stream_info> available_streams_ = lsl::resolve_streams();
-    if(available_streams_.empty())
-    {
-        std::cout << "CAN'T FIND SHIT!!!!!!!!!" << std::endl;
-        return false;
-    }
 
-    std::cout << "TOTAL NUMBER OF STREAMS FOUND " << available_streams_.size() << std::endl;
-    for(lsl::stream_info stream_info : available_streams_)
-    {
-        streams_.push_back(new LSLStream(stream_info));
+    for (QString name : streams) {
+
+        std::cout << "Now resolving streams..." << name.toStdString() << std::endl;
+        std::vector<lsl::stream_info> resolved_streams = lsl::resolve_stream("source_id", name.toStdString());
+
+        if(resolved_streams.empty()) {
+            std::cout << "Cannot Resolve stream " << name.toStdString() << std::endl;
+            return false;
+        }
+
+        std::cout << "TOTAL NUMBER OF STREAMS FOUND " << resolved_streams.size() << std::endl;
+        for(lsl::stream_info stream_info : resolved_streams) {
+            streams_.push_back(new LSLStream(stream_info));
+        }
     }
 
     return true;
 }
 
-void LSLNode::initializeStreamPlot(LSLStream* stream)
-{
-    std::vector<std::string> channel_names = stream->streamChannelsIDs();
-
-    for (std::string name : channel_names)
-    {
-        std::cout << "Channel Name: " << name <<std::endl;
-        dataMap().addNumeric(name);
-    }
-}
-
-//loop over each stream fetch latest data frame -> update plots
 void LSLNode::loop()
 {
     for(auto stream : streams_) {
@@ -127,10 +97,8 @@ void LSLNode::loop()
     }
 
     setStreamsCMD(LSLStream::CMD::START);
-    //    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    //worker_thread_cmd_.set(LSLStream::CMD::START);
-
+    //loop over each stream fetch latest data frame -> update plots
     while(isRunning()) {
         pushSingleCycle();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -146,7 +114,7 @@ void LSLNode::setStreamsCMD(LSLStream::CMD cmd)
 }
 
 
-void LSLNode::run(bool is_running)
+void LSLNode::setRunning(bool is_running)
 {
     is_running_.set(is_running);
 }
@@ -175,4 +143,18 @@ void LSLNode::pushSingleCycle()
             index_it->second.pushBack( PlotData::Point( stream_data_chunk.at(i).back().second, stream_data_chunk.at(i).back().first ));
         }
     }
+}
+
+bool LSLNode::xmlSaveState(QDomDocument &doc, QDomElement &parent_element) const
+{
+    Q_UNUSED(doc)
+    Q_UNUSED(parent_element)
+
+    return true;
+}
+
+bool LSLNode::xmlLoadState(const QDomElement &parent_element)
+{
+    Q_UNUSED(parent_element)
+    return true;
 }
